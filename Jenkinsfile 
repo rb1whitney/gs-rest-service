@@ -1,5 +1,8 @@
 pipeline {
-    agent centos7
+     agent {
+        label 'centos7'
+        docker { image 'gradle:4.8.1' }
+    }
     options {
         timestamps()
         timeout(5)
