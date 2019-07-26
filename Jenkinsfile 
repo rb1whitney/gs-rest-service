@@ -1,0 +1,42 @@
+pipeline {
+    agent centos7
+    options {
+        timestamps()
+        timeout(5)
+        }
+    stages {
+        stage('build') {
+            steps {
+			    git branch: 'development', credentialsId: '	rb1whitney-github', url: 'https://github.com/rb1whitney/gs-rest-service'
+				sh 'java -v'
+                parallel(
+                    a: { sh 'gradle assemble' },
+                    b: { sh 'gradle test' }
+                )
+            }
+            post {
+                always {
+                    echo "Cleaning up working directory"
+                    deleteDir()
+                }
+				success { 
+                    echo 'This pipeline is successful and built project'
+					archiveArtifacts(artifacts: '**/target/*.jar', allowEmptyArchive: true)
+				},
+                failure { 
+                    echo 'This pipeline is unsuccessful. Please check console logs.'
+			   },
+               unstable {
+                   echo 'This pipeline is now unstable. Emailing adminstrator"
+               }
+			}
+		}
+	}
+	post {
+		unstable {
+			mail to: 'rb1whitney@msn.com',
+            subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
+            body: "Something is wrong with ${env.BUILD_URL}. Been failing for a while now..."
+		}
+	}
+}
